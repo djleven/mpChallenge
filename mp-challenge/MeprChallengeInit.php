@@ -21,6 +21,7 @@ namespace MeprChallenge;
 use MeprChallenge\Controllers\EndpointController;
 use MeprChallenge\Controllers\AdminController;
 //use MeprChallenge\Controllers\PublicController;
+use MeprChallenge\Controllers\WPCLIController;
 
 class MeprChallengeInit {
 
@@ -154,6 +155,25 @@ class MeprChallengeInit {
     }
 
     /**
+     * Load the required WP CLI dependencies for this plugin.
+     *
+     * @since    1.0.0
+     * @access   private
+     */
+    private function loadWPCLIDependencies() {
+
+        /**
+         * The controller class responsible for registering the wp-cli related classes.
+         */
+        require_once self::WP_MP_CONTROLLERS_DIR . 'WPCLIController.php';
+
+        /**
+         * The class responsible for main wp-cli (transient related) commands of the plugin.
+         */
+        require_once self::WP_MP_LIB_DIR . '/MeprChallengeTransientWPCLI.php';
+    }
+
+    /**
      * Load dependencies and instantiate the plugin controller classes
      *
      * @since    1.0.0
@@ -174,6 +194,10 @@ class MeprChallengeInit {
 //            new PublicController();
         }
 
+        if ( defined( 'WP_CLI' ) && WP_CLI ) {
+            $this->loadWPCLIDependencies();
+            new WPCLIController();
+        }
     }
 }
 
