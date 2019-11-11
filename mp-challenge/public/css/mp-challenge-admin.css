@@ -1,0 +1,24 @@
+/**
+ * The plugin css file for the admin facing views
+ *
+ * @link       https://e-leven.net/
+ * @since      1.0.0
+ *
+ * @package    mp-challenge
+ * @subpackage mp-challenge/public/css
+ */
+
+@font-face {
+    font-family: 'memberpress';
+    src: url('../font/memberpress.eot?51452803');
+    src: url('../font/memberpress.eot?51452803#iefix') format('embedded-opentype'),
+    url('../font/memberpress.woff2?51452803') format('woff2'),
+    url('../font/memberpress.woff?51452803') format('woff'),
+    url('../font/memberpress.ttf?51452803') format('truetype'),
+    url('../font/memberpress.svg?51452803#memberpress') format('svg');
+}
+
+#toplevel_page_mb-challenge-plugin div.wp-menu-image:before {
+    content: "\e839";
+    font-family: "memberpress";
+}
