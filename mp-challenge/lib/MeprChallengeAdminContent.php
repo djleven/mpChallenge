@@ -133,12 +133,13 @@ class MeprChallengeAdminContent {
 
         <div class="wrap">
             <h2><?php echo $myListTable->getTableTitle(); ?></h2>
-            <form method="post">
-                <input type="hidden" name="page" value="my_list_test" />
-                <?php $myListTable->search_box('search', 'search_id'); ?>
-            </form>
+
             <div class="meta-box-sortables ui-sortable">
-                <form method="post">
+                <form method="get">
+                    <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>" />
+                    <?php
+                    $myListTable->search_box('search', 'search_id'); ?>
+
                     <?php $myListTable->display();?>
                 </form>
 
@@ -155,7 +156,7 @@ class MeprChallengeAdminContent {
      * @since     1.0.0
      * @return    object | string
      */
-    protected function getChallengeData() {
+    private function getChallengeData() {
 
         $response = wp_remote_get( self::MAIN_URL, array(
                 'timeout' => 30
@@ -169,9 +170,7 @@ class MeprChallengeAdminContent {
             return false;
         }
 
-        $meprChallengeData = json_decode($data);
-
-        return $meprChallengeData;
+        return json_decode($data);
 
     }
 

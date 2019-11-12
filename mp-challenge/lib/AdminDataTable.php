@@ -74,9 +74,9 @@ class AdminDataTable extends WP_List_Table {
 
         $columns = array();
 
-        if(isset($this->table_data->data->headers) && isset($this->table_data->data->rows->{1})) {
-            $column_labels = $this->table_data->data->headers;
-            $firstRowItem = $this->table_data->data->rows->{1};
+        if(isset($this->table_data->headers) && isset($this->table_data->rows[1])) {
+            $column_labels = $this->table_data->headers;
+            $firstRowItem = $this->table_data->rows[1];
             $count = 0;
             foreach ($firstRowItem as $key => $value) {
                 $columns[$key] = __(sanitize_text_field($column_labels[$count]), MP_CHALLENGE_WP_NAME);
@@ -194,18 +194,6 @@ class AdminDataTable extends WP_List_Table {
     }
 
     /**
-     * Get the date column value to display
-     *
-     * @param object $item
-     *
-     * @return string
-     */
-    public function column_date( $item ) {
-
-        return date(get_option( 'date_format' ), (int) $item['date']);
-    }
-
-    /**
      * Message to be displayed when there are no items
      */
     public function no_items() {
@@ -244,9 +232,9 @@ class AdminDataTable extends WP_List_Table {
 
         $items = array();
 
-        if(isset($this->table_data->data->rows)) {
+        if(isset($this->table_data->rows)) {
 
-            foreach ($this->table_data->data->rows as $row) {
+            foreach ($this->table_data->rows as $row) {
                 $items[] = (array) $row;
             }
         }
