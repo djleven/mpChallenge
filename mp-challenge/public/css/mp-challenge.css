@@ -1,5 +1,5 @@
 /**
- * The css file for the public facing views of the plugin
+ * The css file for the plugin's shortcode view
  *
  * @link       https://e-leven.net/
  * @since      1.0.0
@@ -7,3 +7,65 @@
  * @package    mp-challenge
  * @subpackage mp-challenge/public/css
  */
+table.mp-challenge-table th {
+    word-break: break-word;
+    background: #dee2e6;
+    cursor: pointer;
+}
+table.mp-challenge-table td {
+    word-break: keep-all;
+}
+table.mp-challenge-table td, table.mp-challenge-table th  {
+    border: none;
+    line-height: 1.3em;
+}
+table.mp-challenge-table tbody tr:hover {
+    background: rgba(0,0,0,.09);
+}
+table.mp-challenge-table thead th:hover {
+    background: rgba(0,0,0,.09);
+}
+.mp-challenge-table span.mobile-label {
+    display: none;
+}
+
+@media only screen and (max-width: 760px), (min-device-width: 768px)
+and (max-device-width: 1024px)  {
+
+    .mp-challenge-table span.mobile-label {
+        display: inline;
+        font-weight: 600;
+    }
+
+    table.mp-challenge-table,
+    .mp-challenge-table thead,
+    .mp-challenge-table tbody,
+    .mp-challenge-table th,
+    .mp-challenge-table td,
+    .mp-challenge-table tr {
+        display: block;
+    }
+
+    .mp-challenge-table thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .mp-challenge-table tr {
+        margin: 0 0 1rem 0;
+    }
+
+    .mp-challenge-table tr:nth-child(odd), .mp-challenge-table tr:nth-child(odd):hover {
+        background: #dee2e6;
+    }
+
+    .mp-challenge-table tr:nth-child(even), .mp-challenge-table tr:nth-child(even):hover {
+        background: rgba(0,0,0,.075);
+    }
+
+    .mp-challenge-table td {
+        border-bottom: 1px solid #fff;
+        position: relative;
+    }
+}

@@ -20,7 +20,7 @@ namespace MeprChallenge;
 
 use MeprChallenge\Controllers\EndpointController;
 use MeprChallenge\Controllers\AdminController;
-//use MeprChallenge\Controllers\PublicController;
+use MeprChallenge\Controllers\PublicController;
 use MeprChallenge\Controllers\WPCLIController;
 
 class MeprChallengeInit {
@@ -145,12 +145,12 @@ class MeprChallengeInit {
         /**
          * The class responsible for orchestrating actions on the public-facing side of the site.
          */
-//        require_once self::WP_MP_CONTROLLERS_DIR . 'PublicController.php';
+        require_once self::WP_MP_CONTROLLERS_DIR . 'PublicController.php';
 
         /**
          * The class responsible for the plugin core shortcode view / functionality
          */
-//        require_once self::WP_MP_LIB_DIR . '/MeprChallengeShortcode.php';
+        require_once self::WP_MP_LIB_DIR . '/MeprChallengeShortcode.php';
 
     }
 
@@ -191,7 +191,7 @@ class MeprChallengeInit {
         } else {
 
             $this->loadPublicDependencies();
-//            new PublicController();
+            new PublicController();
         }
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {
