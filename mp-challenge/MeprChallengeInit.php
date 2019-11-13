@@ -102,6 +102,11 @@ class MeprChallengeInit {
          */
         require_once self::WP_MP_CONTROLLERS_DIR . 'EndpointController.php';
 
+        /**
+         * The class responsible for the plugin's main endpoint.
+         */
+        require_once self::WP_MP_LIB_DIR . 'MeprChallengeEndpoint.php';
+
     }
 
     /**

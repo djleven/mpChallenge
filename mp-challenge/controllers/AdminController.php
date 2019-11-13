@@ -18,16 +18,26 @@ class AdminController {
     /**
      * Initialize the class.
      *
-     * Register the plugin admin menu, page and page options callback
+     * Register the plugin admin pages and related functionality
      *
      * @since    1.0.0
      */
     public function __construct() {
 
-        $challenge_admin_content = new MeprChallengeAdminContent();
-        add_action('admin_menu', array ($challenge_admin_content, 'mb_challenge_plugin_menu'));
-        add_filter('set-screen-option', array ($challenge_admin_content, 'challenge_page_set_option'), 10, 3);
+        $this->registerMainAdminPage();
+
         add_action('admin_menu', array ($this, 'enqueue_scripts'));
+    }
+
+    /**
+     * Register the plugin's main endpoint with WP API
+     *
+     * @since     1.0.0
+     * @return    void
+     */
+    protected function registerMainAdminPage() {
+
+        new MeprChallengeAdminContent();
     }
 
     /**

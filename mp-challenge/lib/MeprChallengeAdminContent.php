@@ -34,6 +34,8 @@ class MeprChallengeAdminContent {
      */
     public function __construct() {
 
+        add_action('admin_menu', array ($this, 'mb_challenge_plugin_menu'));
+        add_filter('set-screen-option', array ($this, 'challenge_page_set_option'), 10, 3);
         $this->mp_challenge_data = $this->getChallengeData();
     }
 
@@ -122,6 +124,9 @@ class MeprChallengeAdminContent {
     /**
      * Callback that renders the plugin admin page HTML content
      *
+     * Could be moved to a (new) views folder should we want to thin out this class file in the future,
+     * We would need to implement a render template / view type functionality for the plugin
+     *
      * @since     1.0.0
      * @return    void
      */
@@ -171,7 +176,6 @@ class MeprChallengeAdminContent {
         }
 
         return json_decode($data);
-
     }
 
     /**
