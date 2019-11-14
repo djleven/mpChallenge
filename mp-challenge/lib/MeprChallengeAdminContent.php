@@ -168,14 +168,7 @@ class MeprChallengeAdminContent {
             )
         );
 
-        $data = wp_remote_retrieve_body($response);
-
-        if( empty($data) || is_wp_error($response)) {
-
-            return false;
-        }
-
-        return json_decode($data);
+        return json_decode(wp_remote_retrieve_body($response));
     }
 
     /**

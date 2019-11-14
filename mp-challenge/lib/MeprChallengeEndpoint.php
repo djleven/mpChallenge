@@ -67,7 +67,7 @@ class MeprChallengeEndpoint {
             array(
                 'methods' => \WP_REST_Server::READABLE, // which === 'GET'
                 'callback' => array($this, 'get_challenge_data'),
-                'show_in_index'  =>  $this->show_in_index,
+                'show_in_index' => $this->show_in_index,
                 'permission_callback' => array($this, 'require_logged_in_permission')
             )
         );
@@ -92,7 +92,7 @@ class MeprChallengeEndpoint {
     /**
      * Call and get response from remote API endpoint
      *
-     * @param  \WP_REST_Request   $request
+     * @param  \WP_REST_Request $request
      *
      * @return array | \WP_Error
      */
@@ -102,22 +102,10 @@ class MeprChallengeEndpoint {
 
         $url = 'https://cspf-dev-challenge.herokuapp.com/';
 
-        $response = wp_remote_get( $url, array(
+        $response = wp_remote_get($url, array(
                 'timeout' => 30,
             )
         );
-        if ( is_wp_error( $response ) ) {
-            $error_message = $response->get_error_message();
-            $this->logEndpointErrors($error_message, 'EndpointController:getChallengeDataFromRemoteServer');
-
-            return new \WP_Error(
-                'generic_error',
-                $error_message,
-                array(
-                    'status' => 400,
-                )
-            );
-        }
 
         return $response;
     }
@@ -133,7 +121,7 @@ class MeprChallengeEndpoint {
      *
      * @since     1.0.0
      *
-     * @param   \WP_REST_Request   $request
+     * @param   \WP_REST_Request $request
      * @return   \WP_Error | \WP_REST_Response
      */
     public function get_challenge_data(\WP_REST_Request $request) {
@@ -141,7 +129,7 @@ class MeprChallengeEndpoint {
         // Check database (saves expensive HTTP requests)
         $meprChallengeData = get_transient(self::MEPR_CHALLENGE_TRANSIENT);
 
-        if( !($meprChallengeData === false) ) {
+        if (!($meprChallengeData === false)) {
 
             return $meprChallengeData;
         }
@@ -149,16 +137,25 @@ class MeprChallengeEndpoint {
         // HTTP request to get data since no transient version exists
         $response = $this->getChallengeDataFromRemoteServer($request);
 
-        if( !(is_wp_error($response)) ) {
-            $response = json_decode(wp_remote_retrieve_body($response));
+        $data = wp_remote_retrieve_body($response);
 
+        if (empty($data) || (is_wp_error($response))) {
+
+            $error_message = 'Generic remote server request error';
+            if (is_wp_error($response)) {
+                $error_message = $response->get_error_message();
+            }
+
+            $this->logEndpointErrors($error_message, 'EndpointController:get_challenge_data');
+
+        } else {
             // Process and sanitise data
-            $response = $this->processChallengeData($response);
+            $data = $this->processChallengeData(json_decode($data));
 
-            // Store in database for an hour
-            set_transient( self::MEPR_CHALLENGE_TRANSIENT, $response, HOUR_IN_SECONDS );
+            $response = new \WP_REST_Response($data, 200);
 
-            return new \WP_REST_Response($response, 200);
+            // Store response in database for an hour
+            set_transient(self::MEPR_CHALLENGE_TRANSIENT, $response, HOUR_IN_SECONDS);
         }
 
         return $response;
@@ -202,57 +199,37 @@ class MeprChallengeEndpoint {
      *
      * @since     1.0.0
      *
-     * @param    object   $response
+     * @param    object $response
      * @return   array
      */
     public function processChallengeData($response) {
-
-        $sanitize_row_args =
-            array(
-                'id' => FILTER_VALIDATE_INT,
-                'fname' => FILTER_SANITIZE_STRING,
-                'lname' => FILTER_SANITIZE_STRING,
-                'email' => FILTER_SANITIZE_EMAIL,
-                'date' => FILTER_VALIDATE_INT
-            );
         $row_count = 1;
         $new_model = array();
         $rows = array();
         foreach ($response as $key => $value) {
 
-            if($key ==='title' && is_string($value)) {
+            if ($key === 'title' && is_string($value)) {
                 // sanitise and add title to new array model
                 $new_model[$key] = sanitize_text_field($value);
 
-            } elseif($key === 'data') {
-                foreach($value as $data_key=>$data_value) {
+            } elseif ($key === 'data') {
+                foreach ($value as $data_key => $data_value) {
 
-                    if($data_key ==='headers' && is_array($data_value)) {
+                    if ($data_key === 'headers' && is_array($data_value)) {
                         // sanitise and add headers to new array model
                         $new_model[$data_key] =
                             array_filter($value->headers, function ($val) {
                                 return sanitize_text_field($val);
-                            }
-                            );
+                            });
 
-                    } elseif($data_key ==='rows') {
+                    } elseif ($data_key === 'rows') {
 
-                        foreach($data_value as $rows_key => $rows_value) {
-                            if(isset($data_value->{$row_count})) {
-                                $current_row = (array) $data_value->{$row_count};
-
-
-                                // validate row array item values and exclude not expected / not validated items
-                                $current_row = filter_var_array($current_row, $sanitize_row_args);
-
-                                if(isset($current_row['date'])) {
-                                    // convert timestamp to date format as per wp settings and locale
-                                    $current_row['date'] =
-                                        date_i18n(get_option( 'date_format' ), (int) $current_row['date']);
-                                }
+                        foreach ($data_value as $rows_key => $rows_value) {
+                            if (isset($data_value->{$row_count})) {
+                                $current_row = (array)$data_value->{$row_count};
 
                                 // add row array to new array model
-                                $rows[] = $current_row;
+                                $rows[] = $this->processRowItemProperties($current_row);
                             }
                             $row_count++;
                         }
@@ -264,5 +241,34 @@ class MeprChallengeEndpoint {
         }
 
         return $new_model;
+    }
+    /**
+     * Process and sanitise the row property items
+     * @since     1.0.0
+     *
+     * @param    array   $current_row
+     * @return   array
+     */
+    public function processRowItemProperties($current_row) {
+
+        $sanitize_row_args =
+            array(
+                'id' => FILTER_VALIDATE_INT,
+                'fname' => FILTER_SANITIZE_STRING,
+                'lname' => FILTER_SANITIZE_STRING,
+                'email' => FILTER_SANITIZE_EMAIL,
+                'date' => FILTER_VALIDATE_INT
+            );
+        // validate row properties' item values and exclude not expected / not validated items
+        $current_row = filter_var_array($current_row, $sanitize_row_args);
+
+        if (isset($current_row['date'])) {
+            // convert timestamp to date format as per wp settings and locale
+            $current_row['date'] =
+                date_i18n(get_option('date_format'), (int)$current_row['date']);
+        }
+
+        return $current_row;
+
     }
 }
