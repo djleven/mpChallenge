@@ -39,13 +39,21 @@ class AdminDataTable extends WP_List_Table {
     /**
      * The list of table columns
      *
-     * @@var array
+     * @var array
      */
     private $columns;
+
+    /**
+     * Class for the table admin messages
+     *
+     * @var AdminNoticesAdminTable
+     */
+    private $admin_msg;
 
     public function __construct($table_data = false) {
 
         if($table_data) {
+            $this->admin_msg = new AdminNoticesAdminTable();
             $this->table_data = $table_data;
             $this->all_items = $this->getAllItems();
             $this->columns = $this->get_columns();
@@ -201,14 +209,31 @@ class AdminDataTable extends WP_List_Table {
     }
 
     /**
-     * Message to be displayed when there are no items selected for a bulk action
+     * Generate the table navigation above or below the table and remove the
+     * _wp_http_referrer because it generates a URL that is too large
+     *
+     * @param string $which
+     * @return void
      */
-    public function no_items_selected_for_bulk_action () {
+    protected function display_tablenav( $which ) {
+        if ( 'top' === $which ) {
+            wp_nonce_field( 'bulk-' . $this->_args['plural'], 'nonce-mp-list-table', false );
+        }
         ?>
-        <div>
-            <p>
-                <?php _e( 'You must select at least one item to perform the operation!', MP_CHALLENGE_WP_NAME );?>
-            </p>
+
+        <div class="tablenav <?php echo esc_attr( $which ); ?>">
+
+            <?php if ( $this->has_items() ) : ?>
+                <div class="alignleft actions bulkactions">
+                    <?php $this->bulk_actions( $which ); ?>
+                </div>
+            <?php
+            endif;
+            $this->extra_tablenav( $which );
+            $this->pagination( $which );
+            ?>
+
+            <br class="clear" />
         </div>
         <?php
     }
@@ -267,29 +292,7 @@ class AdminDataTable extends WP_List_Table {
             return $this->table_data->title;
         }
 
-        return 'Memberpress Challenge Table';
-    }
-
-    /**
-     * Gets the request parameter.
-     *
-     * @param      string  $key      The query parameter
-     * @param      string  $default  The default value to return if not found
-     *
-     * @return     string | array    The request parameter
-     */
-    protected function getRequestParameter( $key, $default = '' ) {
-
-        if ( ! isset( $_REQUEST[ $key ] ) || empty( $_REQUEST[ $key ] ) ) {
-
-            return $default;
-        }
-        if( is_array($_REQUEST[ $key ]) ) {
-
-            return $_REQUEST[ $key ];
-        }
-
-        return strip_tags( (string) wp_unslash( $_REQUEST[ $key ] ) );
+        return __( 'Memberpress Challenge Table', MP_CHALLENGE_WP_NAME );
     }
 
     /**
@@ -299,9 +302,13 @@ class AdminDataTable extends WP_List_Table {
      */
     protected function processActions() {
 
-        if ($this->current_action() === 'export') {
+        if (Utils::getRequestParameter('refresh', false)) {
 
-            $request_data_ids = $this->getRequestParameter('mp_item');
+            add_action( 'admin_notices', array($this->admin_msg, 'data_refresh_success') );
+        }
+        else if ($this->current_action() === 'export') {
+
+            $request_data_ids = Utils::getRequestParameter('mp_item');
 
             if($request_data_ids) {
                 $request_data = array();
@@ -318,14 +325,12 @@ class AdminDataTable extends WP_List_Table {
                     var MeprChallengeExportData = ' . json_encode($request_data),
                     'before'
                 );
-            } else {
-                add_action( 'admin_notices', array($this, 'no_items_selected_for_bulk_action') );
-            }
+                add_action( 'admin_notices', array($this->admin_msg, 'export_success') );
 
-        } elseif ( ! empty( $_GET['_wp_http_referer'] ) ) {
-            // remove _wp_http_referer from uri when no actions
-            wp_redirect( remove_query_arg( array( '_wp_http_referer', '_wpnonce' ), stripslashes( $_SERVER['REQUEST_URI'] ) ) );
-            exit;
+            } else {
+
+                add_action( 'admin_notices', array($this->admin_msg, 'no_items_selected_for_bulk_action') );
+            }
         }
     }
 
@@ -337,7 +342,7 @@ class AdminDataTable extends WP_List_Table {
     protected function getSearchResultsFiltered() {
 
         $filtered_data = array();
-        $search_key = sanitize_text_field($this->getRequestParameter('s'));
+        $search_key = sanitize_text_field(Utils::getRequestParameter('s'));
         if($search_key) {
             foreach ($this->all_items as $item) {
                 foreach ($item as $key=>$value) {
@@ -354,7 +359,6 @@ class AdminDataTable extends WP_List_Table {
             return $filtered_data;
         }
 
-
         return $this->all_items;
     }
 
@@ -365,12 +369,11 @@ class AdminDataTable extends WP_List_Table {
      */
     protected function usortReorder( $a, $b ) {
 
-        $order_by = $this->getRequestParameter('orderby', 'id');
-        $order = $this->getRequestParameter('order', 'asc');
+        $order_by = Utils::getRequestParameter('orderby', 'id');
+        $order = Utils::getRequestParameter('order', 'asc');
 
         $result = strcmp( $a[$order_by], $b[$order_by] );
 
         return ( $order === 'asc' ) ? $result : -$result;
     }
-
 }

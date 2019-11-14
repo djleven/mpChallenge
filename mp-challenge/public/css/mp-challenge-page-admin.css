@@ -19,3 +19,14 @@
 #wpcontent #mp-challenge-admin-header img.mp-logo {
     height: 36px;
 }
+.mp-challenge-notice {
+    display: block;
+    line-height: 1.4;
+    padding: 11px 15px;
+    border-left-width: 3px;
+    border-left-style: solid;
+    text-align: left;
+    margin: 25px 20px 0 2px;
+    background-color: #fff;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+}

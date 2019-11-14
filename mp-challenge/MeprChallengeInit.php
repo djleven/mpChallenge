@@ -118,6 +118,21 @@ class MeprChallengeInit {
     private function loadAdminDependencies() {
 
         /**
+         * The plugin's helper class.
+         */
+        require_once self::WP_MP_LIB_DIR . '/Utils.php';
+
+        /**
+         * The abstract class responsible for the plugin admin notices.
+         */
+        require_once self::WP_MP_LIB_DIR . '/AdminNotices.php';
+
+        /**
+         * The class responsible for the admin table notices.
+         */
+        require_once self::WP_MP_LIB_DIR . '/AdminNoticesAdminTable.php';
+
+        /**
          * The class responsible for orchestrating actions in the admin-facing side of the site.
          */
         require_once self::WP_MP_CONTROLLERS_DIR . 'AdminController.php';

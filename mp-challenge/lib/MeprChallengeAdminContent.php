@@ -131,37 +131,60 @@ class MeprChallengeAdminContent {
      * @return    void
      */
     public function mb_challenge_admin_view() {
+        if($this->mp_challenge_data) :
+            $myListTable = new AdminDataTable($this->mp_challenge_data);
+            $myListTable->prepare_items();
+            ?>
 
-        $myListTable = new AdminDataTable($this->mp_challenge_data);
-        $myListTable->prepare_items();
-        ?>
+            <div class="wrap">
+                <h2><?php echo $myListTable->getTableTitle(); ?></h2>
 
-        <div class="wrap">
-            <h2><?php echo $myListTable->getTableTitle(); ?></h2>
+                <div class="meta-box-sortables ui-sortable">
+                    <form method="get">
+                        <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>" />
+                        <?php
+                        $myListTable->search_box('search', 'search_id'); ?>
+                        <button class="button-secondary" name="refresh" type="submit" formmethod="post" value="1">
+                            Refresh Data
+                        </button>
+                        <?php $myListTable->display();?>
+                    </form>
 
-            <div class="meta-box-sortables ui-sortable">
-                <form method="get">
-                    <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>" />
-                    <?php
-                    $myListTable->search_box('search', 'search_id'); ?>
-
-                    <?php $myListTable->display();?>
-                </form>
-
+                </div>
             </div>
-        </div>
-        <?
+        <?php else :?>
+            <div class="mp-challenge-notice notice-error">
+                <p>
+                    <?php _e( 'An error has occurred getting the data', MP_CHALLENGE_WP_NAME );?>
+                </p>
+            </div>
+        <?php endif;
     }
 
     /**
-     * Call and get the challenge data from plugin WP API
+     * Force refresh the data from the server if requested
      *
-     * Return false on fail
+     * Add feedback message
      *
      * @since     1.0.0
-     * @return    object | string
+     * @return    void
      */
-    private function getChallengeData() {
+    protected function forceRefresh() {
+
+        if (Utils::getRequestParameter('refresh', false)) {
+
+            delete_transient('mepr_challenge_data');
+        }
+    }
+    /**
+     * Call and get the challenge data from plugin WP API
+     *
+     * @since     1.0.0
+     * @return    mixed
+     */
+    protected function getChallengeData() {
+
+        $this->forceRefresh();
 
         $response = wp_remote_get( self::MAIN_URL, array(
                 'timeout' => 30
@@ -175,6 +198,7 @@ class MeprChallengeAdminContent {
      * Register the JavaScript and the stylesheets for the plugin admin page exclusively.
      *
      * @since    1.0.0
+     * @return    void
      */
     public function enqueuePageScripts() {
 
@@ -188,6 +212,5 @@ class MeprChallengeAdminContent {
             MP_CHALLENGE_WP_NAME . '-page', MP_CHALLENGE_PLUGIN_URL . $cssFilePath);
 
     }
-
-
 }
+
