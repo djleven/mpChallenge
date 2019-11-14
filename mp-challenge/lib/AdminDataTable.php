@@ -200,6 +200,19 @@ class AdminDataTable extends WP_List_Table {
         _e( 'Sorry, no people were found.', MP_CHALLENGE_WP_NAME );
     }
 
+    /**
+     * Message to be displayed when there are no items selected for a bulk action
+     */
+    public function no_items_selected_for_bulk_action () {
+        ?>
+        <div>
+            <p>
+                <?php _e( 'You must select at least one item to perform the operation!', MP_CHALLENGE_WP_NAME );?>
+            </p>
+        </div>
+        <?php
+    }
+
     public function prepare_items() {
 
         $all_items = $this->getSearchResultsFiltered();
@@ -305,6 +318,8 @@ class AdminDataTable extends WP_List_Table {
                     var MeprChallengeExportData = ' . json_encode($request_data),
                     'before'
                 );
+            } else {
+                add_action( 'admin_notices', array($this, 'no_items_selected_for_bulk_action') );
             }
 
         }
