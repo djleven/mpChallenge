@@ -83,7 +83,7 @@ class AdminDataTable extends WP_List_Table {
                 $count++;
             }
             if($count === count($column_labels)) {
-                // add checkbox column tot op
+                // add checkbox column to top
                 $columns = array('cb' => '<input type="checkbox" />') + $columns;
 
             } else {
@@ -229,7 +229,7 @@ class AdminDataTable extends WP_List_Table {
             'per_page'    => $per_page
         ) );
 
-        $hidden = array();
+        $hidden = get_hidden_columns( $this->screen );
         $this->_column_headers = array($this->columns, $hidden, $this->get_sortable_columns());
 
         $this->items = $page_data;
@@ -322,6 +322,10 @@ class AdminDataTable extends WP_List_Table {
                 add_action( 'admin_notices', array($this, 'no_items_selected_for_bulk_action') );
             }
 
+        } elseif ( ! empty( $_GET['_wp_http_referer'] ) ) {
+            // remove _wp_http_referer from uri when no actions
+            wp_redirect( remove_query_arg( array( '_wp_http_referer', '_wpnonce' ), stripslashes( $_SERVER['REQUEST_URI'] ) ) );
+            exit;
         }
     }
 
@@ -338,9 +342,6 @@ class AdminDataTable extends WP_List_Table {
             foreach ($this->all_items as $item) {
                 foreach ($item as $key=>$value) {
 
-                    if($key === 'date') {
-                        $value = $this->column_date($item);
-                    }
                     if (strpos(
                         strtolower((string)$value),
                         strtolower($search_key)
