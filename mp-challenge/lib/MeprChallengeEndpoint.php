@@ -101,6 +101,8 @@ class MeprChallengeEndpoint {
         // $request var currently not used
 
         $url = 'https://cspf-dev-challenge.herokuapp.com/';
+        // uncomment to test the date filter - original response has only 1 date month
+        // $url = 'https://us-central1-eleven-190316.cloudfunctions.net/mp-challenge/';
 
         $response = wp_remote_get($url, array(
                 'timeout' => 30,
@@ -206,6 +208,7 @@ class MeprChallengeEndpoint {
         $row_count = 1;
         $new_model = array();
         $rows = array();
+        $date_stamp_array = array();
         foreach ($response as $key => $value) {
 
             if ($key === 'title' && is_string($value)) {
@@ -227,7 +230,6 @@ class MeprChallengeEndpoint {
                         foreach ($data_value as $rows_key => $rows_value) {
                             if (isset($data_value->{$row_count})) {
                                 $current_row = (array)$data_value->{$row_count};
-
                                 // add row array to new array model
                                 $rows[] = $this->processRowItemProperties($current_row);
                             }
@@ -263,9 +265,12 @@ class MeprChallengeEndpoint {
         $current_row = filter_var_array($current_row, $sanitize_row_args);
 
         if (isset($current_row['date'])) {
+            $current_date = $current_row['date'];
+
+            // copy date timestamp
+            $current_row['timestamp'] = (string) $current_date;
             // convert timestamp to date format as per wp settings and locale
-            $current_row['date'] =
-                date_i18n(get_option('date_format'), (int)$current_row['date']);
+            $current_row['date'] = date_i18n(get_option('date_format'), (int) $current_date);
         }
 
         return $current_row;

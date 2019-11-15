@@ -37,4 +37,30 @@ class Utils
 
         return strip_tags((string)wp_unslash($_REQUEST[$key]));
     }
+
+
+    /**
+     * Determine if value is valid timestamp
+     *
+     * @param    $timestamp  string | int  valid unix timestamp
+     * @return   bool
+     */
+    public static function isValidTimeStamp($timestamp)
+    {
+        return ((string) (int) $timestamp === $timestamp)
+            && ($timestamp <= PHP_INT_MAX)
+            && ($timestamp >= ~PHP_INT_MAX);
+    }
+
+    /**
+     * Get the base date (i18n) filter format of a timestamp (ex: Mar-2019)
+     *
+     * @param    $timestamp  string | int  valid unix timestamp
+     * @return   string
+     */
+    public static function getDateFilterFormat($timestamp) {
+
+        return date_i18n("M-Y", strtotime( date_i18n( 'Y-m-01' , (string) $timestamp)));
+    }
 }
+

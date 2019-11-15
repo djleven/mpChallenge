@@ -70,11 +70,12 @@
              * @param  tableColumns array   The table columns
              */
             getTableHead: function( tableColumns ) {
+                var _this = this
                 var tableHead = '<thead class="' + this.headerClass + '"><tr>';
 
                 $.each(tableColumns, function( index, value ) {
 
-                    tableHead += '<th>' + value + '</th>';
+                    tableHead += '<th class="' + _this.slugifyString(value) + '">' + value + '</th>';
                 });
 
                 tableHead += '</tr></thead>';
@@ -88,16 +89,20 @@
             getTableBody: function( tableRows, tableColumns ) {
                 var tableBody = '<tbody class="' + this.bodyClass + '">';
                 var dataKeysToLabels = this.mapDataKeysToLabels(tableRows, tableColumns);
-
+                var hiddenRowData =['timestamp'];
                 $.each(tableRows, function( index, row ) {
                     tableBody+='<tr>';
 
                     $.each(row, function( key ) {
+                        var style = ''
+                        if(hiddenRowData.indexOf(key) !== -1) {
+                            style = 'display: none;'
+                        }
+                            tableBody +=
+                                '<td class="' + key + '" style="' + style + '">' +
+                                '<span class="mobile-label"> ' + dataKeysToLabels[key] + ':  </span>'
+                                + row[key] + '</td>';
 
-                        tableBody +=
-                            '<td class="' + key + '">' +
-                            '<span class="mobile-label"> ' + dataKeysToLabels[key] + ':  </span>'
-                            + row[key] + '</td>';
                     });
 
                     tableBody+='</tr>';
@@ -132,12 +137,18 @@
              *
              * Sorts descending and then toggles asc/desc on subsequent column clicks
              *
+             * Sort dates using timestamps instead
+             *
              */
             sortColumns: function() {
                 var compareCellValues = function(index) {
                     var getCellValue = function (row, index) {
-
-                        return $(row).children('td').eq(index).text()
+                        var element = $(row).children('td').eq(index)
+                        // if date return hidden timestamp value instead for evaluation
+                        if(element.hasClass('date')) {
+                            element = $(row).children('td').eq(index+1)
+                        }
+                        return element.text()
                     }
 
                     return function (a, b) {
@@ -165,6 +176,19 @@
                 for (var i = 0; i < rows.length; i++) {
                     table.append(rows[i])
                 }
+            },
+            /**
+             * Convert string into 'slug'
+             *
+             * Remove non-valid characters and spaces,
+             * replace dashes with underscores,
+             * convert to lowercase
+             */
+            slugifyString: function (str) {
+                return str
+                    .toLowerCase()
+                    .replace(/[^\w ]+/g, '')
+                    .replace(/ +/g, '_')
             }
         }
 

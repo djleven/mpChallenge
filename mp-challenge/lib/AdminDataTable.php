@@ -19,6 +19,9 @@ use MeprChallenge\Traits\ErrorLoggerTrait;
 
 class AdminDataTable extends WP_List_Table {
 
+    const TIMESTAMP_KEY = 'timestamp';
+    const DATE_KEY = 'date';
+
     use ErrorLoggerTrait;
 
     /**
@@ -27,28 +30,35 @@ class AdminDataTable extends WP_List_Table {
      *
      * @var object | bool
      */
-    private $table_data;
+    protected $table_data;
 
     /**
      * Table data items (rows)
      *
      * @var array
      */
-    private $all_items;
+    protected $all_items;
+
+    /**
+     * Table data items (rows) filtered by user input
+     *
+     * @var array
+     */
+    protected $filtered_items;
 
     /**
      * The list of table columns
      *
      * @var array
      */
-    private $columns;
+    protected $columns;
 
     /**
      * Class for the table admin messages
      *
      * @var AdminNoticesAdminTable
      */
-    private $admin_msg;
+    protected $admin_msg;
 
     public function __construct($table_data = false) {
 
@@ -56,6 +66,7 @@ class AdminDataTable extends WP_List_Table {
             $this->admin_msg = new AdminNoticesAdminTable();
             $this->table_data = $table_data;
             $this->all_items = $this->getAllItems();
+            $this->filtered_items = $this->getFilteredItems();
             $this->columns = $this->get_columns();
             $this->processActions();
 
@@ -80,6 +91,7 @@ class AdminDataTable extends WP_List_Table {
      */
     public function get_columns() {
 
+        $hidden_data_keys = array(self::TIMESTAMP_KEY);
         $columns = array();
 
         if(isset($this->table_data->headers) && isset($this->table_data->rows[1])) {
@@ -87,8 +99,10 @@ class AdminDataTable extends WP_List_Table {
             $firstRowItem = $this->table_data->rows[1];
             $count = 0;
             foreach ($firstRowItem as $key => $value) {
-                $columns[$key] = __(sanitize_text_field($column_labels[$count]), MP_CHALLENGE_WP_NAME);
-                $count++;
+                if(!in_array ($key, $hidden_data_keys)) {
+                    $columns[$key] = __(sanitize_text_field($column_labels[$count]), MP_CHALLENGE_WP_NAME);
+                    $count++;
+                }
             }
             if($count === count($column_labels)) {
                 // add checkbox column to top
@@ -238,19 +252,48 @@ class AdminDataTable extends WP_List_Table {
         <?php
     }
 
-    public function prepare_items() {
 
-        $all_items = $this->getSearchResultsFiltered();
+    function extra_tablenav( $which ) {
+
+        if ( $which == "top" ){
+            ?>
+            <div class="alignleft actions bulkactions">
+                <select name="date-filter">
+                    <option value=""><?php _e( 'All Dates.', MP_CHALLENGE_WP_NAME ) ;?></option>
+                    <?php
+                    $months = $this->getAvailableDateFilterOptions();
+
+                    foreach( $months as $key => $value ){
+                        $selected =
+                            Utils::getRequestParameter('date-filter') === $key ?
+                                ' selected = "selected"' : '';
+                        ?>
+                        <option value="<?php echo $key; ?>" <?php echo $selected; ?>><?php echo $value; ?></option>
+                        <?php
+                    } ?>
+                </select>
+                <button class="button-secondary" name="refresh" type="submit">
+                    <?php _e( 'Filter', MP_CHALLENGE_WP_NAME ) ;?>
+                </button>
+            </div>
+            <?php
+        }
+        if ( $which == "bottom" ){
+            //After the table
+        }
+    }
+
+    public function prepare_items() {
+        $all_items = $this->filtered_items;
         $per_page = $this->get_items_per_page('people_per_page', 5);
         $current_page = $this->get_pagenum();
 
-        $total_items = count($all_items);
         usort( $all_items,  array( $this, 'usortReorder' ));
 
         $page_data = array_slice($all_items,(($current_page-1)*$per_page),$per_page);
 
         $this->set_pagination_args( array(
-            'total_items' => $total_items,
+            'total_items' => count($all_items),
             'per_page'    => $per_page
         ) );
 
@@ -258,7 +301,6 @@ class AdminDataTable extends WP_List_Table {
         $this->_column_headers = array($this->columns, $hidden, $this->get_sortable_columns());
 
         $this->items = $page_data;
-
     }
 
     /**
@@ -278,6 +320,18 @@ class AdminDataTable extends WP_List_Table {
         }
 
         return $items;
+    }
+
+    /**
+     * Filter row items based on available search filters
+     *
+     * @return   array
+     */
+    protected function getFilteredItems() {
+
+        $all_items = $this->getSearchResultsFiltered();
+
+        return $this->filterItemsByDate($all_items);
     }
 
     /**
@@ -335,22 +389,57 @@ class AdminDataTable extends WP_List_Table {
     }
 
     /**
-     * Filter items based on search field input
+     * Get the months available as date filters
+     *
+     * Depending on preference this can be done based on
+     *
+     * a-) items already filtered by search input
+     *
+     * b-) non-filtered results (all items before filters)
+     * The latter is the way wp date filters work for pages/posts
+     *
+     * TODO: This could be made into a page option
+     *
+     * @return   array
+     */
+    protected function getAvailableDateFilterOptions() {
+
+        // option a
+        // $items = $this->filtered_items;
+
+        //option b
+        $items = $this->all_items;
+        $months = array();
+
+        foreach( $items as $key => $value ) {
+            if( isset($value[self::TIMESTAMP_KEY]) &&
+                Utils::isValidTimeStamp((string) $value[self::TIMESTAMP_KEY])
+            ) {
+                $month = Utils::getDateFilterFormat($value[self::TIMESTAMP_KEY]);
+                $month_label = str_replace("-", " ", $month);
+                $months[$month] = $month_label;
+            }
+        }
+
+        return array_unique($months);
+    }
+
+    /**
+     * Filter row items based on search field input
      *
      * @return   array
      */
     protected function getSearchResultsFiltered() {
 
         $filtered_data = array();
-        $search_key = sanitize_text_field(Utils::getRequestParameter('s'));
+        $search_key = Utils::getRequestParameter('s');
         if($search_key) {
             foreach ($this->all_items as $item) {
                 foreach ($item as $key=>$value) {
 
-                    if (strpos(
-                        strtolower((string)$value),
-                        strtolower($search_key)
-                        ) !== false) {
+                    if (strpos(strtolower((string)$value), strtolower($search_key))
+                        !== false)
+                    {
                         $filtered_data[] = $item;
                         break;
                     }
@@ -363,15 +452,47 @@ class AdminDataTable extends WP_List_Table {
     }
 
     /**
-     * usort callback to sort items
+     * Filter row items based on date filter input
      *
-     * @return int
+     * @param   $items array
+     * @return   array
+     */
+    protected function filterItemsByDate($items) {
+
+        $filtered_data = array();
+        $search_key = Utils::getRequestParameter('date-filter');
+        if($search_key) {
+            foreach ($items as $item) {
+                if( isset($item[self::TIMESTAMP_KEY]) &&
+                    Utils::isValidTimeStamp((string) $item[self::TIMESTAMP_KEY])
+                ) {
+                    $month = Utils::getDateFilterFormat($item[self::TIMESTAMP_KEY]);
+                    if($month === $search_key) {
+                        $filtered_data[] = $item;
+                    }
+                }
+            }
+            return $filtered_data;
+        }
+
+        return $items;
+    }
+
+    /**
+     * usort callback to sort items - comparing the two strings
+     *
+     * @param $a  string   The first string.
+     * @param $b  string   The second string.
+     * @return    int
      */
     protected function usortReorder( $a, $b ) {
 
         $order_by = Utils::getRequestParameter('orderby', 'id');
         $order = Utils::getRequestParameter('order', 'asc');
 
+        if($order_by === self::DATE_KEY) {
+            $order_by = self::TIMESTAMP_KEY;
+        }
         $result = strcmp( $a[$order_by], $b[$order_by] );
 
         return ( $order === 'asc' ) ? $result : -$result;
