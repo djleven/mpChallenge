@@ -99,6 +99,7 @@ class AdminDataTable extends WP_List_Table {
             $firstRowItem = $this->table_data->rows[1];
             $count = 0;
             foreach ($firstRowItem as $key => $value) {
+                // exclude timestamp data
                 if(!in_array ($key, $hidden_data_keys)) {
                     $columns[$key] = __(sanitize_text_field($column_labels[$count]), MP_CHALLENGE_WP_NAME);
                     $count++;
@@ -356,13 +357,18 @@ class AdminDataTable extends WP_List_Table {
      */
     protected function processActions() {
 
-        if (Utils::getRequestParameter('refresh', false)) {
+        if (Utils::getRequestParameter('reset', false,'int', 1)) {
+
+            wp_redirect( '/wp-admin/admin.php?page=' . MP_CHALLENGE_WP_NAME );
+            exit;
+        }
+        else if (Utils::getRequestParameter('refresh', false,'int', 1)) {
 
             add_action( 'admin_notices', array($this->admin_msg, 'data_refresh_success') );
         }
         else if ($this->current_action() === 'export') {
 
-            $request_data_ids = Utils::getRequestParameter('mp_item');
+            $request_data_ids = Utils::getRequestParameter('mp_item', false, 'int', 1);
 
             if($request_data_ids) {
                 $request_data = array();
@@ -431,17 +437,20 @@ class AdminDataTable extends WP_List_Table {
      */
     protected function getSearchResultsFiltered() {
 
+        $exclude_data_keys = array(self::TIMESTAMP_KEY);
         $filtered_data = array();
         $search_key = Utils::getRequestParameter('s');
         if($search_key) {
             foreach ($this->all_items as $item) {
                 foreach ($item as $key=>$value) {
-
-                    if (strpos(strtolower((string)$value), strtolower($search_key))
-                        !== false)
-                    {
-                        $filtered_data[] = $item;
-                        break;
+                    // exclude timestamp data from search
+                    if(!in_array ($key, $exclude_data_keys)) {
+                        if (strpos(strtolower((string)$value), strtolower($search_key))
+                            !== false)
+                        {
+                            $filtered_data[] = $item;
+                            break;
+                        }
                     }
                 }
             }

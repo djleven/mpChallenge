@@ -18,12 +18,19 @@ class Utils
     /**
      * Gets the request parameter.
      *
-     * @param      string $key The query parameter
-     * @param      string $default The default value to return if not found
+     * @param   string $key               The query parameter
+     * @param   string $default           The default value to return if not found
+     * @param   string $validation_type   The type of validation to perform - 'int' or 'string'
+     * @param   string $validation_length The max length of 'string' / 'int' validation
      *
      * @return     string | array    The request parameter
      */
-    public static function getRequestParameter($key, $default = '')
+    public static function getRequestParameter(
+        $key,
+        $default = '',
+        $validation_type = 'string',
+        $validation_length = null
+    )
     {
 
         if (!isset($_REQUEST[$key]) || empty($_REQUEST[$key])) {
@@ -32,7 +39,30 @@ class Utils
         }
         if (is_array($_REQUEST[$key])) {
 
-            return $_REQUEST[$key];
+            return wp_unslash($_REQUEST[$key]);
+        }
+        if($validation_type === 'int') {
+            if($validation_length) {
+
+                return substr(
+                    intval($_REQUEST[$key]), 0, intval($validation_length)
+                );
+            }
+
+            return intval($_REQUEST[$key]);
+
+        }
+
+        if($validation_type === 'string') {
+            if($validation_length) {
+
+                return substr(
+                    sanitize_text_field($_REQUEST[$key]), 0, intval($validation_length)
+                );
+            }
+
+            return sanitize_text_field($_REQUEST[$key]);
+
         }
 
         return strip_tags((string)wp_unslash($_REQUEST[$key]));

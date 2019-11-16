@@ -51,7 +51,7 @@ class MeprChallengeAdminContent {
             'MemberPress Challenge Page',
             'MemberPress Challenge',
             'manage_options',
-            'mb-challenge-plugin',
+            MP_CHALLENGE_WP_NAME,
             array($this, 'mb_challenge_admin_view')
         );
 
@@ -145,7 +145,10 @@ class MeprChallengeAdminContent {
                         <?php
                         $myListTable->search_box('search', 'search_id'); ?>
                         <button class="button-secondary" name="refresh" type="submit" formmethod="post" value="1">
-                            Refresh Data
+                            <?php _e( 'Refresh Data', MP_CHALLENGE_WP_NAME );?>
+                        </button>
+                        <button class="button-secondary" name="reset" type="submit" formmethod="post" value="1">
+                            <?php _e( 'Reset All Filters', MP_CHALLENGE_WP_NAME );?>
                         </button>
                         <?php $myListTable->display();?>
                     </form>
@@ -171,7 +174,7 @@ class MeprChallengeAdminContent {
      */
     protected function forceRefresh() {
 
-        if (Utils::getRequestParameter('refresh', false)) {
+        if (Utils::getRequestParameter('refresh', false, 'int', 1)) {
 
             delete_transient('mepr_challenge_data');
         }

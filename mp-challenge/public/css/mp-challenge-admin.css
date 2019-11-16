@@ -18,7 +18,7 @@
     url('../font/memberpress.svg?51452803#memberpress') format('svg');
 }
 
-#toplevel_page_mb-challenge-plugin div.wp-menu-image:before {
+#toplevel_page_mp-challenge div.wp-menu-image:before {
     content: "\e839";
     font-family: "memberpress";
 }
